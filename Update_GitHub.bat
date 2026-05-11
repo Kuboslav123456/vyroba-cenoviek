@@ -75,7 +75,13 @@ if errorlevel 1 (
 )
 
 echo [3/3] Pushujem na GitHub...
-git push
+REM Try regular push first
+git push 2>nul
+if not errorlevel 1 goto :push_ok
+
+REM Fallback: set upstream and push (handles "no upstream branch" error)
+echo (Nastavujem upstream branch a skusam znova...)
+git push -u origin main
 if errorlevel 1 (
     echo.
     echo [CHYBA] Push zlyhal. Pozri vyssie pre detaily.
@@ -83,14 +89,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
+:push_ok
+
 echo.
 echo ===============================================
-echo   HOTOVO!
-echo ===============================================
-echo.
-echo Zmeny boli pushnute na GitHub.
-echo.
-echo Ak mas zapnute GitHub Pages alebo Cloudflare Pages
-echo auto-deploy, nova verzia bude live za 1-2 min.
-echo.
-pause
+echo   HOT

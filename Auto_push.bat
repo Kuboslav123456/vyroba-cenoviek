@@ -80,15 +80,11 @@ if errorlevel 1 (
 )
 
 echo [!NOW!] Pushujem na GitHub...
-git push 2>&1 | findstr /v /c:"Everything up-to-date"
+git push 2>nul
 if errorlevel 1 (
-    echo [!NOW!] [VAROVANIE] Push zlyhal - skusim znova v dalsej iteracii
-) else (
-    echo [!NOW!] [OK] Pushnute na GitHub
-)
-echo ----------------------------------------------
-
-:wait
-REM Wait 30 seconds before next check
-timeout /t 30 /nobreak >nul 2>&1
-goto loop
+    REM Try with upstream set (first push or after branch reset)
+    git push -u origin main 2>&1 | findstr /v /c:"Everything up-to-date"
+    if errorlevel 1 (
+        echo [!NOW!] [VAROVANIE] Push zlyhal - skusim znova v dalsej iteracii
+    ) else (
+        echo [!NOW!] [OK] Pushnute na GitHub (s upstream)
