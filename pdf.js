@@ -189,8 +189,8 @@ function drawCard(ctx, prod, cardX, cardY) {
 // (rest is white margin). We crop precisely to the decoration area and stretch
 // it to fill the entire 12x7 cm card.
 function drawBackground(ctx, bg) {
-  // Cream fill behind everything (margins between cards)
-  ctx.fillStyle = "#f4ede1";
+  // White fill behind everything (margins between cards) — saves toner
+  ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
   // paper_bg is 1819x2573 with 3 cenovky designed at exact positions:
@@ -394,4 +394,4 @@ ${imgs}
 }
 
 window.generateCenovkyPdf = generateCenovkyPdf;
-window.printCenovkyDirect = printCenovkyDirect;
+window.printCenovkyDirect = prin
