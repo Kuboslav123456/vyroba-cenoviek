@@ -185,24 +185,23 @@ function drawCard(ctx, prod, cardX, cardY) {
   }
 }
 
-// Draw paper texture: cream fill on whole A4, then paper_bg's top-third (1 card section)
-// cropped centered to match target aspect ratio, so decorations don't get squished.
+// Draw paper texture: take the top 1/3 of paper_bg (one card section with full texture
+// and decorations) and stretch it to fill the ENTIRE 12x7 cm card. This ensures paper
+// texture covers the whole card surface.
 function drawBackground(ctx, bg) {
-  // Cream fill behind everything
+  // Cream fill behind everything (margins between cards)
   ctx.fillStyle = "#f4ede1";
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
-  // Source: top 1/3 of paper_bg (one card section with decorations)
+  // Take the full top 1/3 of paper_bg (one card section) and stretch it to fit the
+  // entire 12x7 cm card area. This ensures texture covers the whole card.
+  const srcW = bg.naturalWidth;
   const srcH = Math.round(bg.naturalHeight / 3);
-  // Crop horizontally to match target aspect ratio (avoid stretching decorations)
-  const targetAspect = CARD_W / CARD_H;
-  const srcW = Math.min(bg.naturalWidth, Math.round(srcH * targetAspect));
-  const srcX = Math.round((bg.naturalWidth - srcW) / 2); // center horizontally
 
   for (let i = 0; i < 3; i++) {
     ctx.drawImage(bg,
-      srcX, 0, srcW, srcH,                                  // source: centered crop
-      CARD_X, CARD_OFFSETS_Y[i], CARD_W, CARD_H             // dest at card position
+      0, 0, srcW, srcH,                                     // source: full top 1/3
+      CARD_X, CARD_OFFSETS_Y[i], CARD_W, CARD_H             // dest: fills entire card
     );
   }
 
