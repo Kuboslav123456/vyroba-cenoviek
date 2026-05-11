@@ -171,29 +171,20 @@ function drawCard(ctx, prod, cardX, cardY) {
     ["Výrobca:", prod.vyrobca || ""],
     ["Trvanlivosť:", prod.trvanlivost || ""],
   ];
-  // Pre-compute max label width so all values align to the SAME x (table layout)
-  setFont(ctx, "bold", "normal", FS.details_label);
-  let maxLabelW = 0;
-  for (const [label] of details) {
-    const w = ctx.measureText(label + " ").width;
-    if (w > maxLabelW) maxLabelW = w;
-  }
-  const valueOffsetX = maxLabelW + 6; // small extra gap after longest label
-
+  // Value starts right after its label (small space), not aligned in table
   let dy = cardY + CARD_POS.details;
   for (const [label, value] of details) {
-    // Label at left of column
     setFont(ctx, "bold", "normal", FS.details_label);
     ctx.fillText(label, cardX + COL_RIGHT_X, dy);
+    const labelW = ctx.measureText(label + " ").width;
 
-    // Value at fixed x (aligned across all rows)
     setFont(ctx, "normal", "normal", FS.details_value);
-    const wrappedValue = wrapText(ctx, value, COL_RIGHT_W - valueOffsetX);
+    const wrappedValue = wrapText(ctx, value, COL_RIGHT_W - labelW);
     if (wrappedValue.length > 0) {
-      ctx.fillText(wrappedValue[0], cardX + COL_RIGHT_X + valueOffsetX, dy);
+      ctx.fillText(wrappedValue[0], cardX + COL_RIGHT_X + labelW, dy);
       for (let i = 1; i < wrappedValue.length; i++) {
         dy += detLh;
-        ctx.fillText(wrappedValue[i], cardX + COL_RIGHT_X + valueOffsetX, dy);
+        ctx.fillText(wrappedValue[i], cardX + COL_RIGHT_X, dy);
       }
     }
     dy += detLh;
