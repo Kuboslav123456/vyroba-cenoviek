@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Výroba cenoviek v1.0</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-left">
+    <span class="hdr-title">Výroba cenoviek</span>
+    <span class="hdr-version" id="hdrVersion">v1.0</span>
+  </div>
+  <div class="hdr-right">
+    <span class="status-indicator" id="statusIndicator"></span>
+    <button class="btn btn-primary" id="btnPdf">Vygenerovať PDF</button>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- LEFT: list of products -->
+  <aside class="left">
+    <div class="left-head">
+      <span class="section-title">Produkty</span>
+      <span class="count" id="countLabel">(0)</span>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" class="search-input" placeholder="Hľadať produkt...">
+    </div>
+
+    <select id="categoryFilter" class="cat-filter">
+      <option value="__all__">Všetky kategórie</option>
+    </select>
+
+    <div class="list" id="productList"></div>
+
+    <button class="btn btn-add" id="btnAdd">+ Nový produkt</button>
+  </aside>
+
+  <!-- RIGHT: edit form -->
+  <section class="right">
+    <div class="form-card" id="formCard">
+      <div class="form-empty" id="formEmpty">
+        <div class="empty-icon">📋</div>
+        <div class="empty-text">Vyber produkt zo zoznamu vľavo<br>alebo klikni na <strong>+ Nový produkt</strong></div>
+      </div>
+
+      <div class="form-content" id="formContent" hidden>
+        <div class="form-header">
+          <h2 id="formProductName">Produkt</h2>
+          <div class="form-actions">
+            <button class="btn btn-ghost" id="btnDuplicate">Duplikovať</button>
+            <button class="btn btn-danger" id="btnDelete">Vymazať</button>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <label class="field">
+            <span class="lbl">Kategória</span>
+            <select id="fldCategory"></select>
+          </label>
+
+          <label class="field">
+            <span class="lbl">Názov produktu</span>
+            <input type="text" id="fldName">
+          </label>
+
+          <label class="field">
+            <span class="lbl">Popis / príchuť</span>
+            <input type="text" id="fldSubtitle">
+          </label>
+
+          <label class="field">
+            <span class="lbl" id="lblWeight">Hmotnosť</span>
+            <input type="text" id="fldWeight">
+          </label>
+
+          <label class="field">
+            <span class="lbl">Cena</span>
+            <input type="text" id="fldPrice">
+          </label>
+
+          <label class="field field-full">
+            <span class="lbl">Zloženie (ingrediencie)</span>
+            <textarea id="fldIngredients" rows="4"></textarea>
+          </label>
+
+          <label class="field">
+            <span class="lbl">Alergény</span>
+            <input type="text" id="fldAlergeny">
+          </label>
+
+          <label class="field">
+            <span class="lbl">Trvanlivosť</span>
+            <input type="text" id="fldTrvanlivost">
+          </label>
+
+          <label class="field field-full">
+            <span class="lbl">Výrobca</span>
+            <input type="text" id="fldVyrobca">
+          </label>
+        </div>
+
+        <div class="form-footer">
+          <span class="validation-msg" id="validationMsg"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Footer with import/export -->
+<footer class="footer">
+  <button class="btn btn-ghost btn-sm" id="btnExport">Exportovať dáta (JSON)</button>
+  <button class="btn btn-ghost btn-sm" id="btnImport">Importovať dáta (JSON)</button>
+  <input type="file" id="fileInput" accept=".json" hidden>
+  <span class="footer-info" id="footerInfo"></span>
+</footer>
+
+<!-- Multi-select PDF dialog -->
+<div class="modal" id="pdfModal" hidden>
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Vyber produkty pre PDF</h3>
+      <button class="btn-close" id="btnModalClose">×</button>
+    </div>
+    <div class="modal-actions-top">
+      <button class="btn btn-ghost btn-sm" id="btnSelectAll">Vybrať všetky</button>
+      <button class="btn btn-ghost btn-sm" id="btnSelectNone">Žiadne</button>
+      <span class="modal-count" id="modalCount">0 vybraných</span>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btnModalCancel">Zrušiť</button>
+      <button class="btn btn-ghost" id="btnModalPrint" title="Otvorí cenovky v prehliadači a spustí tlačiarenský dialóg s vynúteným pozadím">Tlačiť priamo</button>
+      <button class="btn btn-primary" id="btnModalGenerate">Stiahnuť PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden canvas for PDF rendering -->
+<canvas id="pdfCanvas" width="2481" height="3508" hidden></canvas>
+
+<!-- Hidden image preload -->
+<img id="paperBg" src="paper_bg.jpeg" hidden alt="">
+
+<script src="pdf.js"></script>
+<script src="app.js"></script>
+<
