@@ -34,11 +34,15 @@ const CARD_POS = {
 };
 
 // X positions (relative to card left — card is 1479 px wide)
-// Aligned to the black decorative line in paper_bg: left edge x=118, right edge x=1361
-const COL_LEFT_X = 120;    // ingredients column — aligned with line left
-const COL_LEFT_W = 570;    // ingredients column width
-const COL_RIGHT_X = 760;   // details column starts
-const COL_RIGHT_W = 600;   // details column width — ends at 1360 (line right)
+// paper_bg has TWO separate black lines (LEFT for Zlozenie, RIGHT for Details):
+//   LEFT line:  x=118..546 (width 428)
+//   RIGHT line: x=940..1361 (width 421)
+//   Gap between (price area): x=546..940
+// Columns align EXACTLY under their respective lines.
+const COL_LEFT_X = 120;    // Zlozenie under LEFT line
+const COL_LEFT_W = 425;    // ends at 545 (line LEFT right edge)
+const COL_RIGHT_X = 942;   // Details under RIGHT line (left edge)
+const COL_RIGHT_W = 419;   // ends at 1361 (line RIGHT right edge)
 
 // Max widths for centered title/subtitle (within card)
 const TITLE_MAX_W = 1300;     // leaves ~58 px margin each side inside card
@@ -51,8 +55,8 @@ const FS = {
   price: 20,
   zlozenie_label: 8,
   ingredients: 6,
-  details_label: 8,
-  details_value: 8,
+  details_label: 6,   // same size as Zlozenie body ingredients
+  details_value: 6,
 };
 
 const TABAC = "Tabac Sans";
@@ -146,7 +150,7 @@ function drawCard(ctx, prod, cardX, cardY) {
 
   // Left column: ingredients
   setFont(ctx, "bold", "normal", FS.zlozenie_label);
-  ctx.fillText("Zlozenie:", cardX + COL_LEFT_X, cardY + CARD_POS.zlozenie_label);
+  ctx.fillText("Zloženie:", cardX + COL_LEFT_X, cardY + CARD_POS.zlozenie_label);
 
   setFont(ctx, "normal", "normal", FS.ingredients);
   const bodyLh = Math.round(ptToPx(FS.ingredients) * 1.30);
@@ -158,28 +162,38 @@ function drawCard(ctx, prod, cardX, cardY) {
   }
 
   // Right column: details
-  const isDrink = (prod.category || "") === "Napoje";
-  const weightLabel = isDrink ? "Objem:" : "Hmotnost:";
+  const isDrink = (prod.category || "") === "Nápoje";
+  const weightLabel = isDrink ? "Objem:" : "Hmotnosť:";
   const detLh = Math.round(ptToPx(FS.details_value) * 1.45);
   const details = [
     [weightLabel, prod.weight || ""],
-    ["Alergeny:", prod.alergeny || ""],
-    ["Vyrobca:", prod.vyrobca || ""],
-    ["Trvanlivost:", prod.trvanlivost || ""],
+    ["Alergény:", prod.alergeny || ""],
+    ["Výrobca:", prod.vyrobca || ""],
+    ["Trvanlivosť:", prod.trvanlivost || ""],
   ];
+  // Pre-compute max label width so all values align to the SAME x (table layout)
+  setFont(ctx, "bold", "normal", FS.details_label);
+  let maxLabelW = 0;
+  for (const [label] of details) {
+    const w = ctx.measureText(label + " ").width;
+    if (w > maxLabelW) maxLabelW = w;
+  }
+  const valueOffsetX = maxLabelW + 6; // small extra gap after longest label
+
   let dy = cardY + CARD_POS.details;
   for (const [label, value] of details) {
+    // Label at left of column
     setFont(ctx, "bold", "normal", FS.details_label);
     ctx.fillText(label, cardX + COL_RIGHT_X, dy);
-    const labelW = ctx.measureText(label + " ").width;
 
+    // Value at fixed x (aligned across all rows)
     setFont(ctx, "normal", "normal", FS.details_value);
-    const wrappedValue = wrapText(ctx, value, COL_RIGHT_W - labelW);
+    const wrappedValue = wrapText(ctx, value, COL_RIGHT_W - valueOffsetX);
     if (wrappedValue.length > 0) {
-      ctx.fillText(wrappedValue[0], cardX + COL_RIGHT_X + labelW, dy);
+      ctx.fillText(wrappedValue[0], cardX + COL_RIGHT_X + valueOffsetX, dy);
       for (let i = 1; i < wrappedValue.length; i++) {
         dy += detLh;
-        ctx.fillText(wrappedValue[i], cardX + COL_RIGHT_X, dy);
+        ctx.fillText(wrappedValue[i], cardX + COL_RIGHT_X + valueOffsetX, dy);
       }
     }
     dy += detLh;
@@ -380,13 +394,13 @@ async function printCenovkyDirect(products) {
 </div>
 ${imgs}
 <script>
+<script>
   window.addEventListener("load", () => {
     setTimeout(() => window.print(), 400);
   });
 </script>
 </body>
 </html>`;
-
 
   const win = window.open("", "_blank");
   if (!win) throw new Error("Nepodarilo sa otvorit okno na tlac - povol pop-up okna pre tuto stranku");
