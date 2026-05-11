@@ -1,45 +1,56 @@
 // Vyroba cenoviek - PDF generator (Canvas + jsPDF)
-// Replicates Pillow layout exactly: A4 @ 300 DPI = 2481 x 3508 px
+// 3 cenovky 12x7 cm na A4 portrait, centrovane.
 "use strict";
 
 const PDF_DPI = 300;
-const PAGE_W = 2481;
-const PAGE_H = 3508;
+const PAGE_W = 2481;   // A4 width at 300 DPI (210 mm)
+const PAGE_H = 3508;   // A4 height at 300 DPI (297 mm)
 
-// Per-card offsets (Y) for 3 cards per A4 page
-const CARD_OFFSETS = [0, 1005, 2063];
+// Each cenovka: 12 cm x 7 cm
+const CARD_W = 1417;   // 120 mm
+const CARD_H = 827;    // 70 mm
 
-// Card content positions (Y, relative to card top)
+// Center cards horizontally on A4
+const CARD_X = Math.round((PAGE_W - CARD_W) / 2);  // ~532 px
+
+// Stack 3 cards vertically with even spacing
+// Available vertical margin: 3508 - 3*827 = 1027 px split into 4 spaces
+const VMARGIN = Math.round((PAGE_H - 3 * CARD_H) / 4);  // ~257 px
+const CARD_OFFSETS_Y = [
+  VMARGIN,
+  VMARGIN + CARD_H + VMARGIN,
+  VMARGIN + 2 * (CARD_H + VMARGIN),
+];
+
+// Card content positions (Y, relative to card top — card is 827 px tall)
 const CARD_POS = {
-  brand: 250,        // big product name title (moved down from 195 to clear trim zone)
-  subtitle: 440,     // subtitle / flavor (moved down from 398)
-  weight: 518,       // (currently unused in render — kept for parity)
-  price: 590,        // price (slightly moved from 580)
-  zlozenie_label: 653,
-  body: 698,
-  details: 653,
+  brand: 90,           // big product name
+  subtitle: 250,       // subtitle / flavor
+  price: 410,          // price
+  zlozenie_label: 510, // ingredients label
+  body: 545,           // ingredients body text
+  details: 510,        // details (right column)
 };
 
-// Max widths for auto-fit of centered text — must stay inside the visible card frame.
-// Match the body column span (LEFT_COL_X=615 to RIGHT_COL_X+W=1883 → ~1268 px).
-const TITLE_MAX_W = 1400;     // a bit wider than columns since title decorative
-const SUBTITLE_MAX_W = 1300;  // tighter, must fit inside card frame
+// X positions (relative to card left — card is 1417 px wide)
+const COL_LEFT_X = 60;     // ingredients column starts
+const COL_LEFT_W = 600;    // ingredients column width
+const COL_RIGHT_X = 770;   // details column starts
+const COL_RIGHT_W = 580;   // details column width
 
-const LEFT_COL_X = 615;
-const LEFT_COL_W = 435;
-const RIGHT_COL_X = 1440;
-const RIGHT_COL_W = 443;
+// Max widths for centered title/subtitle (within card)
+const TITLE_MAX_W = 1300;     // leaves ~58 px margin each side inside card
+const SUBTITLE_MAX_W = 1250;
 
-// Font sizes in pt → convert to px via *DPI/72
-// Font sizes increased ~12% from originals to compensate for printer "fit to printable area" shrinkage.
+// Font sizes in pt (converted to px via *DPI/72)
 const FS = {
-  brand: 40,           // was 36
-  name: 20,            // was 18
-  price: 20,           // was 18
-  zlozenie_label: 8,   // was 7
-  ingredients: 6,      // was 5
-  details_label: 8,    // was 7
-  details_value: 8,    // was 7
+  brand: 40,
+  name: 20,
+  price: 20,
+  zlozenie_label: 8,
+  ingredients: 6,
+  details_label: 8,
+  details_value: 8,
 };
 
 const TABAC = "Tabac Sans";
@@ -48,15 +59,11 @@ function ptToPx(pt) {
   return Math.round(pt * PDF_DPI / 72);
 }
 
-// Set canvas font
 function setFont(ctx, weight, style, sizePt) {
-  // weight: "normal" | "bold"
-  // style: "normal" | "italic"
   ctx.font = `${style} ${weight} ${ptToPx(sizePt)}px "${TABAC}"`;
-  ctx.textBaseline = "top"; // PIL draws from top-left
+  ctx.textBaseline = "top";
 }
 
-// Find largest font size (in pt) that keeps `text` within maxWidth on a single line.
 function fitFontSize(ctx, text, weight, style, maxSizePt, minSizePt, maxWidth) {
   if (!text) return maxSizePt;
   for (let sz = maxSizePt; sz >= minSizePt; sz -= 1) {
@@ -66,9 +73,6 @@ function fitFontSize(ctx, text, weight, style, maxSizePt, minSizePt, maxWidth) {
   return minSizePt;
 }
 
-// Fit text in a box (maxWidth × maxHeight), allowing wrap to multiple lines.
-// Tries decreasing font sizes until wrapped text fits within maxHeight.
-// Returns { size, lines, lineH }.
 function fitTextInBox(ctx, text, weight, style, maxSizePt, minSizePt, maxWidth, maxHeight) {
   if (!text) return { size: maxSizePt, lines: [], lineH: Math.round(ptToPx(maxSizePt) * 1.1) };
   for (let sz = maxSizePt; sz >= minSizePt; sz -= 1) {
@@ -79,13 +83,11 @@ function fitTextInBox(ctx, text, weight, style, maxSizePt, minSizePt, maxWidth, 
       return { size: sz, lines, lineH };
     }
   }
-  // Last resort at minSize — accept overflow
   setFont(ctx, weight, style, minSizePt);
   const lines = wrapText(ctx, text, maxWidth);
   return { size: minSizePt, lines, lineH: Math.round(ptToPx(minSizePt) * 1.1) };
 }
 
-// Word-wrap text within max width using current ctx.font
 function wrapText(ctx, text, maxWidth) {
   if (!text) return [];
   const words = text.split(/\s+/);
@@ -104,30 +106,29 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-function drawCard(ctx, prod, yOffset) {
-  const cx = PAGE_W / 2;
+function drawCard(ctx, prod, cardX, cardY) {
+  const cx = cardX + CARD_W / 2;
   ctx.fillStyle = "#000000";
 
-  // Available vertical space for each text block (so it doesn't overflow into the next)
-  const TITLE_BOX_H = CARD_POS.subtitle - CARD_POS.brand - 20;     // ~170 px
-  const SUBTITLE_BOX_H = CARD_POS.price - CARD_POS.subtitle - 20;  // ~130 px
+  const TITLE_BOX_H = CARD_POS.subtitle - CARD_POS.brand - 10;
+  const SUBTITLE_BOX_H = CARD_POS.price - CARD_POS.subtitle - 10;
 
-  // Title (brand) — bold italic, centered. Auto-fit: shrink + wrap if needed
+  // Title (brand)
   const title = prod.name || "Doris Cookies";
   const titleFit = fitTextInBox(ctx, title, "bold", "italic", FS.brand, 14, TITLE_MAX_W, TITLE_BOX_H);
   setFont(ctx, "bold", "italic", titleFit.size);
-  let ty = CARD_POS.brand + yOffset;
+  let ty = cardY + CARD_POS.brand;
   for (const ln of titleFit.lines) {
     const w = ctx.measureText(ln).width;
     ctx.fillText(ln, cx - w / 2, ty);
     ty += titleFit.lineH;
   }
 
-  // Subtitle — bold italic, centered. Auto-fit: wrap to up to 2 lines, shrink if needed
+  // Subtitle
   if (prod.subtitle) {
     const subFit = fitTextInBox(ctx, prod.subtitle, "bold", "italic", FS.name, 9, SUBTITLE_MAX_W, SUBTITLE_BOX_H);
     setFont(ctx, "bold", "italic", subFit.size);
-    let sy = CARD_POS.subtitle + yOffset;
+    let sy = cardY + CARD_POS.subtitle;
     for (const ln of subFit.lines) {
       const w = ctx.measureText(ln).width;
       ctx.fillText(ln, cx - w / 2, sy);
@@ -135,61 +136,100 @@ function drawCard(ctx, prod, yOffset) {
     }
   }
 
-  // Price — regular, centered
+  // Price
   setFont(ctx, "normal", "normal", FS.price);
   const priceTxt = prod.price || "";
   const priceW = ctx.measureText(priceTxt).width;
-  ctx.fillText(priceTxt, cx - priceW / 2, CARD_POS.price + yOffset);
+  ctx.fillText(priceTxt, cx - priceW / 2, cardY + CARD_POS.price);
 
-  // Left column: "Zloženie:" label + ingredients body
+  // Left column: ingredients
   setFont(ctx, "bold", "normal", FS.zlozenie_label);
-  ctx.fillText("Zloženie:", LEFT_COL_X, CARD_POS.zlozenie_label + yOffset);
+  ctx.fillText("Zlozenie:", cardX + COL_LEFT_X, cardY + CARD_POS.zlozenie_label);
 
   setFont(ctx, "normal", "normal", FS.ingredients);
   const bodyLh = Math.round(ptToPx(FS.ingredients) * 1.30);
-  let by = CARD_POS.body + yOffset;
-  const ingLines = wrapText(ctx, prod.ingredients || "", LEFT_COL_W);
+  let by = cardY + CARD_POS.body;
+  const ingLines = wrapText(ctx, prod.ingredients || "", COL_LEFT_W);
   for (const ln of ingLines) {
-    ctx.fillText(ln, LEFT_COL_X, by);
+    ctx.fillText(ln, cardX + COL_LEFT_X, by);
     by += bodyLh;
   }
 
-  // Right column: details (label + value pairs)
-  // Drinks use "Objem" (volume) instead of "Hmotnosť" (weight)
-  const isDrink = (prod.category || "") === "Nápoje";
-  const weightLabel = isDrink ? "Objem:" : "Hmotnosť:";
+  // Right column: details
+  const isDrink = (prod.category || "") === "Napoje";
+  const weightLabel = isDrink ? "Objem:" : "Hmotnost:";
   const detLh = Math.round(ptToPx(FS.details_value) * 1.45);
   const details = [
     [weightLabel, prod.weight || ""],
-    ["Alergény:", prod.alergeny || ""],
-    ["Výrobca:", prod.vyrobca || ""],
-    ["Trvanlivosť:", prod.trvanlivost || ""],
+    ["Alergeny:", prod.alergeny || ""],
+    ["Vyrobca:", prod.vyrobca || ""],
+    ["Trvanlivost:", prod.trvanlivost || ""],
   ];
-  let dy = CARD_POS.details + yOffset;
+  let dy = cardY + CARD_POS.details;
   for (const [label, value] of details) {
     setFont(ctx, "bold", "normal", FS.details_label);
-    ctx.fillText(label, RIGHT_COL_X, dy);
+    ctx.fillText(label, cardX + COL_RIGHT_X, dy);
     const labelW = ctx.measureText(label + " ").width;
 
     setFont(ctx, "normal", "normal", FS.details_value);
-    const wrappedValue = wrapText(ctx, value, RIGHT_COL_W - labelW);
+    const wrappedValue = wrapText(ctx, value, COL_RIGHT_W - labelW);
     if (wrappedValue.length > 0) {
-      ctx.fillText(wrappedValue[0], RIGHT_COL_X + labelW, dy);
+      ctx.fillText(wrappedValue[0], cardX + COL_RIGHT_X + labelW, dy);
       for (let i = 1; i < wrappedValue.length; i++) {
         dy += detLh;
-        ctx.fillText(wrappedValue[i], RIGHT_COL_X, dy);
+        ctx.fillText(wrappedValue[i], cardX + COL_RIGHT_X, dy);
       }
     }
     dy += detLh;
   }
 }
 
+// Draw paper texture: cream fill on whole A4, then paper_bg's top-third (1 card section)
+// scaled to 12x7 cm and placed at each of 3 card positions.
+function drawBackground(ctx, bg) {
+  // Cream fill behind everything
+  ctx.fillStyle = "#f4ede1";
+  ctx.fillRect(0, 0, PAGE_W, PAGE_H);
+
+  // Source: top 1/3 of paper_bg (one card section with decorations)
+  const srcW = bg.naturalWidth;
+  const srcH = Math.round(bg.naturalHeight / 3);
+
+  for (let i = 0; i < 3; i++) {
+    ctx.drawImage(bg,
+      0, 0, srcW, srcH,                                     // source
+      CARD_X, CARD_OFFSETS_Y[i], CARD_W, CARD_H             // dest at card position
+    );
+  }
+
+  // Optional: cut marks at card corners (subtle)
+  ctx.strokeStyle = "#bbb";
+  ctx.lineWidth = 1;
+  const m = 25; // mark length
+  for (let i = 0; i < 3; i++) {
+    const x1 = CARD_X, y1 = CARD_OFFSETS_Y[i];
+    const x2 = CARD_X + CARD_W, y2 = y1 + CARD_H;
+    // Top-left
+    ctx.beginPath();
+    ctx.moveTo(x1 - m, y1); ctx.lineTo(x1, y1);
+    ctx.moveTo(x1, y1 - m); ctx.lineTo(x1, y1);
+    // Top-right
+    ctx.moveTo(x2, y1); ctx.lineTo(x2 + m, y1);
+    ctx.moveTo(x2, y1 - m); ctx.lineTo(x2, y1);
+    // Bottom-left
+    ctx.moveTo(x1 - m, y2); ctx.lineTo(x1, y2);
+    ctx.moveTo(x1, y2); ctx.lineTo(x1, y2 + m);
+    // Bottom-right
+    ctx.moveTo(x2, y2); ctx.lineTo(x2 + m, y2);
+    ctx.moveTo(x2, y2); ctx.lineTo(x2, y2 + m);
+    ctx.stroke();
+  }
+}
+
 async function ensureFontsLoaded() {
-  // document.fonts.ready resolves when all @font-face loads finish
   if (document.fonts && document.fonts.ready) {
     await document.fonts.ready;
   }
-  // Trigger load of each variant explicitly so the canvas can use them immediately
   if (document.fonts && document.fonts.load) {
     await Promise.all([
       document.fonts.load(`bold italic ${ptToPx(FS.brand)}px "${TABAC}"`),
@@ -208,14 +248,13 @@ function paperBgImage() {
       return;
     }
     img.addEventListener("load", () => resolve(img), { once: true });
-    img.addEventListener("error", () => reject(new Error("Nepodarilo sa načítať paper_bg.jpeg")), { once: true });
+    img.addEventListener("error", () => reject(new Error("Nepodarilo sa nacitat paper_bg.jpeg")), { once: true });
   });
 }
 
-
 async function generateCenovkyPdf(products) {
-  if (!products || products.length === 0) throw new Error("Žiadne produkty");
-  if (typeof window.jspdf === "undefined") throw new Error("jsPDF sa nenačítalo");
+  if (!products || products.length === 0) throw new Error("Ziadne produkty");
+  if (typeof window.jspdf === "undefined") throw new Error("jsPDF sa nenacitalo");
 
   await ensureFontsLoaded();
   const bg = await paperBgImage();
@@ -225,7 +264,6 @@ async function generateCenovkyPdf(products) {
   canvas.height = PAGE_H;
   const ctx = canvas.getContext("2d");
 
-  // jsPDF setup — A4 portrait in standard mm units (more compatible with print drivers)
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({
     orientation: "portrait",
@@ -240,33 +278,25 @@ async function generateCenovkyPdf(products) {
   for (let i = 0; i < products.length; i += 3) {
     const chunk = products.slice(i, i + 3);
 
-    // Reset canvas + draw paper background
     ctx.clearRect(0, 0, PAGE_W, PAGE_H);
-    ctx.drawImage(bg, 0, 0, PAGE_W, PAGE_H);
+    drawBackground(ctx, bg);
 
-    // Draw up to 3 cards
     for (let c = 0; c < chunk.length; c++) {
-      drawCard(ctx, chunk[c], CARD_OFFSETS[c]);
+      drawCard(ctx, chunk[c], CARD_X, CARD_OFFSETS_Y[c]);
     }
 
-    // Add canvas as image to PDF (using mm coords for A4 standard)
     const imgData = canvas.toDataURL("image/jpeg", 0.92);
     if (!firstPage) pdf.addPage("a4", "portrait");
     pdf.addImage(imgData, "JPEG", 0, 0, A4_W_MM, A4_H_MM, undefined, "FAST");
     firstPage = false;
   }
 
-
-  // Save PDF
   const stamp = new Date().toISOString().slice(0, 10);
   pdf.save(`cenovky_doris_${stamp}.pdf`);
 }
 
-// Print cenovky directly via browser print dialog (bypasses PDF reader issues).
-// Renders to canvas (same logic as PDF), then opens HTML page with full-page images,
-// using print-color-adjust: exact to force the paper background to print.
 async function printCenovkyDirect(products) {
-  if (!products || products.length === 0) throw new Error("Žiadne produkty");
+  if (!products || products.length === 0) throw new Error("Ziadne produkty");
 
   await ensureFontsLoaded();
   const bg = await paperBgImage();
@@ -279,20 +309,19 @@ async function printCenovkyDirect(products) {
   for (let i = 0; i < products.length; i += 3) {
     const chunk = products.slice(i, i + 3);
     ctx.clearRect(0, 0, PAGE_W, PAGE_H);
-    ctx.drawImage(bg, 0, 0, PAGE_W, PAGE_H);
+    drawBackground(ctx, bg);
     for (let c = 0; c < chunk.length; c++) {
-      drawCard(ctx, chunk[c], CARD_OFFSETS[c]);
+      drawCard(ctx, chunk[c], CARD_X, CARD_OFFSETS_Y[c]);
     }
     pages.push(canvas.toDataURL("image/jpeg", 0.92));
   }
 
-  // Build HTML with embedded images and forced background printing
   const imgs = pages.map(p => `<div class="page"><img src="${p}" alt=""></div>`).join("\n");
   const html = `<!DOCTYPE html>
 <html lang="sk">
 <head>
 <meta charset="UTF-8">
-<title>Cenovky - Tlač</title>
+<title>Cenovky - Tlac</title>
 <style>
   @page { size: A4 portrait; margin: 0; }
   html, body {
@@ -337,12 +366,10 @@ async function printCenovkyDirect(products) {
 </head>
 <body>
 <div class="hint">
-  Stlač <strong>Ctrl + P</strong> alebo klikni tlačidlo: <button onclick="window.print()">Tlačiť</button>
-  &nbsp; Pozadie sa vytlačí automaticky (vynúté CSS pravidlom).
+  Stlac <strong>Ctrl + P</strong> alebo klikni: <button onclick="window.print()">Tlacit</button>
 </div>
 ${imgs}
 <script>
-  // Auto-open print dialog after a short delay so images load
   window.addEventListener("load", () => {
     setTimeout(() => window.print(), 400);
   });
@@ -356,6 +383,5 @@ ${imgs}
   win.document.close();
 }
 
-// Expose to global
 window.generateCenovkyPdf = generateCenovkyPdf;
 window.printCenovkyDirect = printCenovkyDirect;
