@@ -33,11 +33,12 @@ const CARD_POS = {
   details: 510,        // details (right column)
 };
 
-// X positions (relative to card left — card is 1417 px wide)
-const COL_LEFT_X = 60;     // ingredients column starts
-const COL_LEFT_W = 600;    // ingredients column width
-const COL_RIGHT_X = 770;   // details column starts
-const COL_RIGHT_W = 580;   // details column width
+// X positions (relative to card left — card is 1479 px wide)
+// Aligned to the black decorative line in paper_bg: left edge x=118, right edge x=1361
+const COL_LEFT_X = 120;    // ingredients column — aligned with line left
+const COL_LEFT_W = 570;    // ingredients column width
+const COL_RIGHT_X = 760;   // details column starts
+const COL_RIGHT_W = 600;   // details column width — ends at 1360 (line right)
 
 // Max widths for centered title/subtitle (within card)
 const TITLE_MAX_W = 1300;     // leaves ~58 px margin each side inside card
@@ -394,4 +395,4 @@ ${imgs}
 }
 
 window.generateCenovkyPdf = generateCenovkyPdf;
-window.printCenovkyDirect = prin
+window.printCenovkyDirect = printCenovkyDirect;
