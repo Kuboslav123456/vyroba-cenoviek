@@ -31,14 +31,15 @@ const RIGHT_COL_X = 1440;
 const RIGHT_COL_W = 443;
 
 // Font sizes in pt → convert to px via *DPI/72
+// Font sizes increased ~12% from originals to compensate for printer "fit to printable area" shrinkage.
 const FS = {
-  brand: 36,
-  name: 18,
-  price: 18,
-  zlozenie_label: 7,
-  ingredients: 5,
-  details_label: 7,
-  details_value: 7,
+  brand: 40,           // was 36
+  name: 20,            // was 18
+  price: 20,           // was 18
+  zlozenie_label: 8,   // was 7
+  ingredients: 6,      // was 5
+  details_label: 8,    // was 7
+  details_value: 8,    // was 7
 };
 
 const TABAC = "Tabac Sans";
@@ -350,7 +351,7 @@ ${imgs}
 </html>`;
 
   const win = window.open("", "_blank");
-  if (!win) throw new Error("Nepodarilo sa otvoriť okno na tlač — povol pop-up okná pre túto stránku");
+  if (!win) throw new Error("Nepodarilo sa otvorit okno na tlac - povol pop-up okna pre tuto stranku");
   win.document.write(html);
   win.document.close();
 }
