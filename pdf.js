@@ -6,10 +6,12 @@ const PDF_DPI = 300;
 const PAGE_W = 2481;   // A4 width at 300 DPI (210 mm)
 const PAGE_H = 3508;   // A4 height at 300 DPI (297 mm)
 
-// Each cenovka: 12 cm x 7 cm — with +4.4% compensation for printer shrinkage
-// Real measured print: 11.5 x 6.7 cm => need 12/11.5 = 1.044 scale up
-const CARD_W = 1479;   // 125.2 mm (+4.4%) — prints as 120 mm
-const CARD_H = 864;    // 73.2 mm (+4.4%) — prints as 70 mm
+// Each cenovka: target 12 cm x 7.5 cm after print
+// Printer shrinks vertically ~12.6%:
+//   Width:  design 125.2 mm prints as ~12 cm
+//   Height: 75 mm × 1.126 = 84.5 mm design → prints as 7.5 cm
+const CARD_W = 1479;   // 125.2 mm — prints as 120 mm
+const CARD_H = 998;    // 84.5 mm — prints as 75 mm
 
 // Center cards horizontally on A4
 const CARD_X = Math.round((PAGE_W - CARD_W) / 2);  // ~532 px
@@ -23,14 +25,15 @@ const CARD_OFFSETS_Y = [
   VMARGIN + 2 * (CARD_H + VMARGIN),
 ];
 
-// Card content positions (Y, relative to card top — card is 827 px tall)
+// Card content positions (Y, relative to card top — card is 998 px tall)
+// Scaled proportionally by 1.073 from previous 930 px card height.
 const CARD_POS = {
-  brand: 90,           // big product name
-  subtitle: 250,       // subtitle / flavor
-  price: 410,          // price
-  zlozenie_label: 510, // ingredients label
-  body: 545,           // ingredients body text
-  details: 510,        // details (right column)
+  brand: 104,          // big product name
+  subtitle: 289,       // subtitle / flavor
+  price: 474,          // price
+  zlozenie_label: 589, // ingredients label
+  body: 630,           // ingredients body text
+  details: 589,        // details (right column)
 };
 
 // X positions (relative to card left — card is 1479 px wide)
@@ -112,9 +115,10 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-function drawCard(ctx, prod, cardX, cardY) {
+function drawCard(ctx, prod, cardX, cardY, priceField) {
   const cx = cardX + CARD_W / 2;
   ctx.fillStyle = "#000000";
+  priceField = priceField || "price_ba";
 
   const TITLE_BOX_H = CARD_POS.subtitle - CARD_POS.brand - 10;
   const SUBTITLE_BOX_H = CARD_POS.price - CARD_POS.subtitle - 10;
@@ -142,9 +146,9 @@ function drawCard(ctx, prod, cardX, cardY) {
     }
   }
 
-  // Price
+  // Price (BA or Mimo BA based on priceField)
   setFont(ctx, "normal", "normal", FS.price);
-  const priceTxt = prod.price || "";
+  const priceTxt = prod[priceField] || prod.price_ba || prod.price || "";
   const priceW = ctx.measureText(priceTxt).width;
   ctx.fillText(priceTxt, cx - priceW / 2, cardY + CARD_POS.price);
 
@@ -267,9 +271,10 @@ function paperBgImage() {
   });
 }
 
-async function generateCenovkyPdf(products) {
+async function generateCenovkyPdf(products, priceField) {
   if (!products || products.length === 0) throw new Error("Ziadne produkty");
   if (typeof window.jspdf === "undefined") throw new Error("jsPDF sa nenacitalo");
+  priceField = priceField || "price_ba";
 
   await ensureFontsLoaded();
   const bg = await paperBgImage();
@@ -297,7 +302,7 @@ async function generateCenovkyPdf(products) {
     drawBackground(ctx, bg);
 
     for (let c = 0; c < chunk.length; c++) {
-      drawCard(ctx, chunk[c], CARD_X, CARD_OFFSETS_Y[c]);
+      drawCard(ctx, chunk[c], CARD_X, CARD_OFFSETS_Y[c], priceField);
     }
 
     const imgData = canvas.toDataURL("image/jpeg", 0.92);
@@ -310,8 +315,9 @@ async function generateCenovkyPdf(products) {
   pdf.save(`cenovky_doris_${stamp}.pdf`);
 }
 
-async function printCenovkyDirect(products) {
+async function printCenovkyDirect(products, priceField) {
   if (!products || products.length === 0) throw new Error("Ziadne produkty");
+  priceField = priceField || "price_ba";
 
   await ensureFontsLoaded();
   const bg = await paperBgImage();
@@ -326,7 +332,7 @@ async function printCenovkyDirect(products) {
     ctx.clearRect(0, 0, PAGE_W, PAGE_H);
     drawBackground(ctx, bg);
     for (let c = 0; c < chunk.length; c++) {
-      drawCard(ctx, chunk[c], CARD_X, CARD_OFFSETS_Y[c]);
+      drawCard(ctx, chunk[c], CARD_X, CARD_OFFSETS_Y[c], priceField);
     }
     pages.push(canvas.toDataURL("image/jpeg", 0.92));
   }

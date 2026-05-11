@@ -77,10 +77,23 @@ function validateProduct(p) {
   if (!(p.name || "").trim()) issues.push("chýba názov");
   if (!(p.ingredients || "").trim()) issues.push("chýba zloženie");
   else if ((p.ingredients || "").toLowerCase().includes("[doplnit")) issues.push("zloženie obsahuje placeholder");
-  if (!(p.price || "").trim()) issues.push("chýba cena");
+  // Require at least Cena BA (Mimo BA is optional)
+  if (!(p.price_ba || "").trim()) issues.push("chýba cena BA");
   if (!(p.weight || "").trim()) issues.push(isDrinkCategory(p) ? "chýba objem" : "chýba hmotnosť");
   if (!(p.alergeny || "").trim()) issues.push("chýbajú alergény");
   return issues;
+}
+
+// Migrate old products that only have `price` to new schema with price_ba/price_mimo_ba
+function migrateProductSchema(products) {
+  for (const p of products) {
+    if (p.price && !p.price_ba) {
+      p.price_ba = p.price;
+      delete p.price;
+    }
+    if (!p.price_mimo_ba) p.price_mimo_ba = "";
+  }
+  return products;
 }
 
 // ============= STORAGE =============
@@ -100,7 +113,7 @@ function loadFromStorage() {
     if (raw) {
       const data = JSON.parse(raw);
       if (Array.isArray(data)) {
-        state.products = data;
+        state.products = migrateProductSchema(data);
         state.loadedFromStorage = true;
         return true;
       }
@@ -118,7 +131,7 @@ async function loadFromJsonFile() {
     if (!r.ok) throw new Error("fetch status " + r.status);
     const data = await r.json();
     if (Array.isArray(data)) {
-      state.products = data;
+      state.products = migrateProductSchema(data);
       return true;
     }
   } catch (e) {
@@ -212,7 +225,7 @@ function getFilteredProducts() {
     if (cat !== "__all__" && (p.category || "Cookies") !== cat) return false;
     if (!q) return true;
     const haystack = stripDiacritics([
-      p.name, p.subtitle, p.ingredients, p.alergeny, p.category, p.weight, p.price,
+      p.name, p.subtitle, p.ingredients, p.alergeny, p.category, p.weight, p.price_ba, p.price_mimo_ba,
     ].filter(Boolean).join(" ").toLowerCase());
     return haystack.includes(q);
   });
@@ -268,7 +281,7 @@ function renderProductList() {
       nm.textContent = p.name || "(bez názvu)";
       const sub = document.createElement("div");
       sub.className = "list-item-sub";
-      sub.textContent = [p.subtitle, p.weight, p.price].filter(Boolean).join(" • ");
+      sub.textContent = [p.subtitle, p.weight, p.price_ba].filter(Boolean).join(" • ");
       info.appendChild(nm);
       if (sub.textContent) info.appendChild(sub);
       row.appendChild(info);
@@ -305,7 +318,8 @@ function renderForm() {
   document.getElementById("fldName").value = p.name || "";
   document.getElementById("fldSubtitle").value = p.subtitle || "";
   document.getElementById("fldWeight").value = p.weight || "";
-  document.getElementById("fldPrice").value = p.price || "";
+  document.getElementById("fldPriceBa").value = p.price_ba || "";
+  document.getElementById("fldPriceMimo").value = p.price_mimo_ba || "";
   document.getElementById("fldIngredients").value = p.ingredients || "";
   document.getElementById("fldAlergeny").value = p.alergeny || "";
   document.getElementById("fldTrvanlivost").value = p.trvanlivost || "";
@@ -347,11 +361,12 @@ function selectProduct(idx) {
 function addProduct() {
   const cat = state.filterCategory !== "__all__" ? state.filterCategory : "Cookies";
   const newProd = {
-    category: cat,   // category must have a value so the product is grouped somewhere
+    category: cat,
     name: "",
     subtitle: "",
     weight: "",
-    price: "",
+    price_ba: "",
+    price_mimo_ba: "",
     ingredients: "",
     alergeny: "",
     vyrobca: "",
@@ -460,7 +475,8 @@ function wireEvents() {
     { id: "fldName", key: "name", refresh: true },
     { id: "fldSubtitle", key: "subtitle", refresh: true },
     { id: "fldWeight", key: "weight", format: formatWeight, refresh: true },
-    { id: "fldPrice", key: "price", format: formatPrice, refresh: true },
+    { id: "fldPriceBa", key: "price_ba", format: formatPrice, refresh: true },
+    { id: "fldPriceMimo", key: "price_mimo_ba", format: formatPrice, refresh: true },
     { id: "fldIngredients", key: "ingredients", refresh: false },
     { id: "fldAlergeny", key: "alergeny", format: formatAlergeny, refresh: false },
     { id: "fldTrvanlivost", key: "trvanlivost", format: formatTrvanlivost, refresh: false },
@@ -502,6 +518,14 @@ function wireEvents() {
   document.getElementById("btnModalGenerate").addEventListener("click", generatePdfFromModal);
   document.getElementById("btnModalPrint").addEventListener("click", printDirectFromModal);
 
+  // Price tier toggle (BA vs Mimo BA)
+  document.querySelectorAll(".price-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      modalState.priceTier = btn.dataset.tier;
+      document.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b === btn));
+    });
+  });
+
   // Import / Export
   document.getElementById("btnExport").addEventListener("click", exportJson);
   document.getElementById("btnImport").addEventListener("click", () => document.getElementById("fileInput").click());
@@ -523,7 +547,8 @@ function wireEvents() {
 
 // ============= MODAL (PDF SELECTION) =============
 const modalState = {
-  selectedIds: new Set(), // indices into state.products
+  selectedIds: new Set(),
+  priceTier: "ba", // "ba" or "mimo"
 };
 
 function openPdfModal() {
@@ -638,9 +663,10 @@ async function generatePdfFromModal() {
   closePdfModal();
 
   closePdfModal();
-  showToast("Generujem PDF...");
+  const priceField = modalState.priceTier === "mimo" ? "price_mimo_ba" : "price_ba";
+  showToast(`Generujem PDF (${modalState.priceTier === "mimo" ? "Mimo BA" : "BA"} cena)...`);
   try {
-    await generateCenovkyPdf(selected);
+    await generateCenovkyPdf(selected, priceField);
     showToast("PDF vygenerované", "success");
   } catch (e) {
     console.error(e);
@@ -662,9 +688,10 @@ async function printDirectFromModal() {
   }
 
   closePdfModal();
-  showToast("Pripravujem tlač...");
+  const priceField = modalState.priceTier === "mimo" ? "price_mimo_ba" : "price_ba";
+  showToast(`Pripravujem tlač (${modalState.priceTier === "mimo" ? "Mimo BA" : "BA"} cena)...`);
   try {
-    await printCenovkyDirect(selected);
+    await printCenovkyDirect(selected, priceField);
     showToast("Okno tlače otvorené", "success");
   } catch (e) {
     console.error(e);
@@ -678,7 +705,6 @@ async function init() {
   renderCategoryFilter();
   renderCategorySelect();
 
-  // Try storage first, then JSON file fallback
   if (!loadFromStorage()) {
     await loadFromJsonFile();
   }
