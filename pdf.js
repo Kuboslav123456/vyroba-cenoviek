@@ -186,19 +186,22 @@ function drawCard(ctx, prod, cardX, cardY) {
 }
 
 // Draw paper texture: cream fill on whole A4, then paper_bg's top-third (1 card section)
-// scaled to 12x7 cm and placed at each of 3 card positions.
+// cropped centered to match target aspect ratio, so decorations don't get squished.
 function drawBackground(ctx, bg) {
   // Cream fill behind everything
   ctx.fillStyle = "#f4ede1";
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
   // Source: top 1/3 of paper_bg (one card section with decorations)
-  const srcW = bg.naturalWidth;
   const srcH = Math.round(bg.naturalHeight / 3);
+  // Crop horizontally to match target aspect ratio (avoid stretching decorations)
+  const targetAspect = CARD_W / CARD_H;
+  const srcW = Math.min(bg.naturalWidth, Math.round(srcH * targetAspect));
+  const srcX = Math.round((bg.naturalWidth - srcW) / 2); // center horizontally
 
   for (let i = 0; i < 3; i++) {
     ctx.drawImage(bg,
-      0, 0, srcW, srcH,                                     // source
+      srcX, 0, srcW, srcH,                                  // source: centered crop
       CARD_X, CARD_OFFSETS_Y[i], CARD_W, CARD_H             // dest at card position
     );
   }
@@ -377,6 +380,7 @@ ${imgs}
 </script>
 </body>
 </html>`;
+
 
   const win = window.open("", "_blank");
   if (!win) throw new Error("Nepodarilo sa otvorit okno na tlac - povol pop-up okna pre tuto stranku");
