@@ -6,9 +6,10 @@ const PDF_DPI = 300;
 const PAGE_W = 2481;   // A4 width at 300 DPI (210 mm)
 const PAGE_H = 3508;   // A4 height at 300 DPI (297 mm)
 
-// Each cenovka: 12 cm x 7 cm
-const CARD_W = 1417;   // 120 mm
-const CARD_H = 827;    // 70 mm
+// Each cenovka: 12 cm x 7 cm — with +4.4% compensation for printer shrinkage
+// Real measured print: 11.5 x 6.7 cm => need 12/11.5 = 1.044 scale up
+const CARD_W = 1479;   // 125.2 mm (+4.4%) — prints as 120 mm
+const CARD_H = 864;    // 73.2 mm (+4.4%) — prints as 70 mm
 
 // Center cards horizontally on A4
 const CARD_X = Math.round((PAGE_W - CARD_W) / 2);  // ~532 px
