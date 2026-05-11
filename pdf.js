@@ -185,22 +185,28 @@ function drawCard(ctx, prod, cardX, cardY) {
   }
 }
 
-// Draw paper texture: take the top 1/3 of paper_bg (one card section with full texture
-// and decorations) and stretch it to fill the ENTIRE 12x7 cm card. This ensures paper
-// texture covers the whole card surface.
+// Draw paper texture. paper_bg's design only fills 60% x 87% of the image
+// (rest is white margin). We crop precisely to the decoration area and stretch
+// it to fill the entire 12x7 cm card.
 function drawBackground(ctx, bg) {
   // Cream fill behind everything (margins between cards)
   ctx.fillStyle = "#f4ede1";
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
-  // Take the full top 1/3 of paper_bg (one card section) and stretch it to fit the
-  // entire 12x7 cm card area. This ensures texture covers the whole card.
-  const srcW = bg.naturalWidth;
-  const srcH = Math.round(bg.naturalHeight / 3);
+  // paper_bg is 1819x2573 with 3 cenovky designed at exact positions:
+  //   X: 363..1455 (1092 px wide, 60% of image)
+  //   Y bands: 110..769, 847..1505, 1583..2242 (659 px each)
+  // We crop the FIRST cenovka exactly and stretch to fill our card.
+  const bw = bg.naturalWidth;
+  const bh = bg.naturalHeight;
+  const srcX = Math.round(bw * 0.200);  // 363/1819
+  const srcW = Math.round(bw * 0.600);  // 1092/1819
+  const srcY = Math.round(bh * 0.043);  // 110/2573
+  const srcH = Math.round(bh * 0.256);  // 659/2573
 
   for (let i = 0; i < 3; i++) {
     ctx.drawImage(bg,
-      0, 0, srcW, srcH,                                     // source: full top 1/3
+      srcX, srcY, srcW, srcH,                               // source: decoration only
       CARD_X, CARD_OFFSETS_Y[i], CARD_W, CARD_H             // dest: fills entire card
     );
   }
