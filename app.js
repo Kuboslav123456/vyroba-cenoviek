@@ -3,7 +3,155 @@
 
 const APP_VERSION = "1.0";
 const STORAGE_KEY = "vyroba_cenoviek_data_v1";
+const LANG_KEY = "vyroba_cenoviek_lang";
 const AUTOSAVE_DELAY_MS = 600;
+
+// ============= TRANSLATIONS =============
+const TRANSLATIONS = {
+  sk: {
+    appTitle: "Výroba cenoviek",
+    products: "Produkty",
+    searchPlaceholder: "Hľadať produkt...",
+    allCategories: "Všetky kategórie",
+    addProduct: "+ Nový produkt",
+    emptyHintHtml: "Vyber produkt zo zoznamu vľavo<br>alebo klikni na <strong>+ Nový produkt</strong>",
+    fldCategory: "Kategória",
+    fldName: "Názov produktu",
+    fldSubtitle: "Popis / príchuť",
+    fldWeight: "Hmotnosť",
+    fldVolume: "Objem",
+    fldPriceBa: "Cena BA",
+    fldPriceMimo: "Cena mimo BA",
+    fldIngredients: "Zloženie (ingrediencie)",
+    fldAlergeny: "Alergény",
+    fldTrvanlivost: "Trvanlivosť",
+    fldVyrobca: "Výrobca",
+    btnDuplicate: "Duplikovať",
+    btnDelete: "Vymazať",
+    btnPdf: "Vygenerovať PDF",
+    btnExport: "Exportovať dáta (JSON)",
+    btnImport: "Importovať dáta (JSON)",
+    modalTitle: "Vyber produkty pre PDF",
+    btnSelectAll: "Vybrať všetky",
+    btnSelectNone: "Žiadne",
+    priceLabel: "Cena:",
+    btnModalCancel: "Zrušiť",
+    btnModalPrint: "Tlačiť priamo",
+    btnModalGenerate: "Stiahnuť PDF",
+    selectedSuffix: "vybraných",
+    statusSaving: "● Ukladám...",
+    statusSaved: "✓ Uložené",
+    vMissingName: "chýba názov",
+    vMissingIngredients: "chýba zloženie",
+    vPlaceholderIngredients: "zloženie obsahuje placeholder",
+    vMissingPriceBa: "chýba cena BA",
+    vMissingWeight: "chýba hmotnosť",
+    vMissingVolume: "chýba objem",
+    vMissingAlergeny: "chýbajú alergény",
+    vAllOk: "✓ Všetky polia vyplnené správne",
+    emptyListNone: 'Zatiaľ žiadne produkty.\nKlikni „+ Nový produkt".',
+    emptyListFilter: "Žiadne výsledky pre tento filter.",
+    productsInDb: "produktov • dáta v prehliadači (localStorage)",
+    confirmDelete: "Naozaj vymazať produkt:",
+    confirmDeleteUndo: "Táto akcia sa nedá vrátiť.",
+    toastDuplicated: "Produkt zduplikovaný",
+    toastDeleted: "Produkt vymazaný",
+    toastExported: "Dáta exportované",
+    toastImported: "Importovaných {n} produktov",
+    toastImportError: "Chyba importu: ",
+    toastSaveError: "Chyba ukladania: ",
+    toastSelectAtLeastOne: "Vyber aspoň jeden produkt",
+    toastGenerating: "Generujem PDF",
+    toastPrintPreparing: "Pripravujem tlač",
+    toastPdfDone: "PDF vygenerované",
+    toastPrintDone: "Okno tlače otvorené",
+    confirmInvalidProducts: "Niektoré produkty majú chyby:",
+    confirmGenAnyway: "Vygenerovať aj tak?",
+    confirmPrintAnyway: "Pokračovať s tlačou?",
+    confirmAndOthers: "a ďalších",
+    productNoName: "(bez názvu)",
+    pdfZlozenie: "Zloženie:",
+    pdfHmotnost: "Hmotnosť:",
+    pdfObjem: "Objem:",
+    pdfAlergeny: "Alergény:",
+    pdfVyrobca: "Výrobca:",
+    pdfTrvanlivost: "Trvanlivosť:",
+  },
+  cz: {
+    appTitle: "Tvorba cenovek",
+    products: "Produkty",
+    searchPlaceholder: "Hledat produkt...",
+    allCategories: "Všechny kategorie",
+    addProduct: "+ Nový produkt",
+    emptyHintHtml: "Vyber produkt ze seznamu vlevo<br>nebo klikni na <strong>+ Nový produkt</strong>",
+    fldCategory: "Kategorie",
+    fldName: "Název produktu",
+    fldSubtitle: "Popis / příchuť",
+    fldWeight: "Hmotnost",
+    fldVolume: "Objem",
+    fldPriceBa: "Cena BA",
+    fldPriceMimo: "Cena mimo BA",
+    fldIngredients: "Složení (ingredience)",
+    fldAlergeny: "Alergeny",
+    fldTrvanlivost: "Trvanlivost",
+    fldVyrobca: "Výrobce",
+    btnDuplicate: "Duplikovat",
+    btnDelete: "Vymazat",
+    btnPdf: "Vygenerovat PDF",
+    btnExport: "Exportovat data (JSON)",
+    btnImport: "Importovat data (JSON)",
+    modalTitle: "Vyber produkty pro PDF",
+    btnSelectAll: "Vybrat vše",
+    btnSelectNone: "Žádné",
+    priceLabel: "Cena:",
+    btnModalCancel: "Zrušit",
+    btnModalPrint: "Tisknout přímo",
+    btnModalGenerate: "Stáhnout PDF",
+    selectedSuffix: "vybraných",
+    statusSaving: "● Ukládám...",
+    statusSaved: "✓ Uloženo",
+    vMissingName: "chybí název",
+    vMissingIngredients: "chybí složení",
+    vPlaceholderIngredients: "složení obsahuje placeholder",
+    vMissingPriceBa: "chybí cena BA",
+    vMissingWeight: "chybí hmotnost",
+    vMissingVolume: "chybí objem",
+    vMissingAlergeny: "chybí alergeny",
+    vAllOk: "✓ Všechna pole vyplněna správně",
+    emptyListNone: 'Zatím žádné produkty.\nKlikni „+ Nový produkt".',
+    emptyListFilter: "Žádné výsledky pro tento filtr.",
+    productsInDb: "produktů • data v prohlížeči (localStorage)",
+    confirmDelete: "Opravdu vymazat produkt:",
+    confirmDeleteUndo: "Tato akce se nedá vrátit.",
+    toastDuplicated: "Produkt duplikován",
+    toastDeleted: "Produkt vymazán",
+    toastExported: "Data exportována",
+    toastImported: "Importováno {n} produktů",
+    toastImportError: "Chyba importu: ",
+    toastSaveError: "Chyba ukládání: ",
+    toastSelectAtLeastOne: "Vyber alespoň jeden produkt",
+    toastGenerating: "Generuji PDF",
+    toastPrintPreparing: "Připravuji tisk",
+    toastPdfDone: "PDF vygenerováno",
+    toastPrintDone: "Okno tisku otevřeno",
+    confirmInvalidProducts: "Některé produkty mají chyby:",
+    confirmGenAnyway: "Vygenerovat i tak?",
+    confirmPrintAnyway: "Pokračovat s tiskem?",
+    confirmAndOthers: "a dalších",
+    productNoName: "(bez názvu)",
+    pdfZlozenie: "Složení:",
+    pdfHmotnost: "Hmotnost:",
+    pdfObjem: "Objem:",
+    pdfAlergeny: "Alergeny:",
+    pdfVyrobca: "Výrobce:",
+    pdfTrvanlivost: "Trvanlivost:",
+  },
+};
+
+function t(key) {
+  const lang = state.lang || "sk";
+  return TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.sk[key] ?? key;
+}
 
 const CATEGORIES = [
   "Cookies", "Koláče - klasické", "Koláče - vegánske", "Koláče - bezlepkové",
@@ -15,12 +163,13 @@ const DEFAULT_PRICE = "3,90 €";
 
 // ============= STATE =============
 const state = {
-  products: [],          // array of product objects
-  selectedIndex: -1,     // currently edited product
+  products: [],
+  selectedIndex: -1,
   search: "",
   filterCategory: "__all__",
   saveTimer: null,
   loadedFromStorage: false,
+  lang: localStorage.getItem(LANG_KEY) || "sk",
 };
 
 // ============= AUTO-FORMAT =============
@@ -38,7 +187,7 @@ function isDrinkCategory(p) {
 }
 
 function weightFieldLabel(p) {
-  return isDrinkCategory(p) ? "Objem" : "Hmotnosť";
+  return isDrinkCategory(p) ? t("fldVolume") : t("fldWeight");
 }
 
 function formatPrice(s) {
@@ -74,13 +223,12 @@ function formatTrvanlivost(s) {
 
 function validateProduct(p) {
   const issues = [];
-  if (!(p.name || "").trim()) issues.push("chýba názov");
-  if (!(p.ingredients || "").trim()) issues.push("chýba zloženie");
-  else if ((p.ingredients || "").toLowerCase().includes("[doplnit")) issues.push("zloženie obsahuje placeholder");
-  // Require at least Cena BA (Mimo BA is optional)
-  if (!(p.price_ba || "").trim()) issues.push("chýba cena BA");
-  if (!(p.weight || "").trim()) issues.push(isDrinkCategory(p) ? "chýba objem" : "chýba hmotnosť");
-  if (!(p.alergeny || "").trim()) issues.push("chýbajú alergény");
+  if (!(p.name || "").trim()) issues.push(t("vMissingName"));
+  if (!(p.ingredients || "").trim()) issues.push(t("vMissingIngredients"));
+  else if ((p.ingredients || "").toLowerCase().includes("[doplnit")) issues.push(t("vPlaceholderIngredients"));
+  if (!(p.price_ba || "").trim()) issues.push(t("vMissingPriceBa"));
+  if (!(p.weight || "").trim()) issues.push(isDrinkCategory(p) ? t("vMissingVolume") : t("vMissingWeight"));
+  if (!(p.alergeny || "").trim()) issues.push(t("vMissingAlergeny"));
   return issues;
 }
 
@@ -145,18 +293,18 @@ const statusEl = document.getElementById("statusIndicator");
 let statusTimer = null;
 
 function setStatusSaving() {
-  clearTimeout(statusTimer); // prevent leftover fade-out from previous "saved" state
-  statusEl.textContent = "● Ukladám...";
+  clearTimeout(statusTimer);
+  statusEl.textContent = t("statusSaving");
   statusEl.className = "status-indicator saving";
 }
 function setStatusSaved() {
-  statusEl.textContent = "✓ Uložené";
+  statusEl.textContent = t("statusSaved");
   statusEl.className = "status-indicator saved";
   clearTimeout(statusTimer);
   statusTimer = setTimeout(() => { statusEl.textContent = ""; statusEl.className = "status-indicator"; }, 1500);
 }
 function setStatusError(msg) {
-  statusEl.textContent = "✗ " + (msg || "Chyba ukladania");
+  statusEl.textContent = "✗ " + (msg || t("toastSaveError"));
   statusEl.className = "status-indicator err";
 }
 
@@ -182,15 +330,47 @@ function scheduleAutosave() {
 // ============= RENDERING =============
 function renderHeader() {
   document.getElementById("hdrVersion").textContent = "v" + APP_VERSION;
-  document.title = `Výroba cenoviek v${APP_VERSION}`;
+  const hdrTitleEl = document.getElementById("hdrTitleText");
+  if (hdrTitleEl) hdrTitleEl.textContent = t("appTitle");
+  document.title = `${t("appTitle")} v${APP_VERSION}`;
+}
+
+function applyTranslations() {
+  // Update all elements with data-i18n attribute
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.dataset.i18n;
+    if (el.hasAttribute("data-i18n-html")) {
+      el.innerHTML = t(key);
+    } else {
+      el.textContent = t(key);
+    }
+  });
+  // Update placeholders
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  // Re-render dynamic parts (category select, form, list)
+  renderHeader();
+}
+
+function setLang(lang) {
+  if (lang !== "sk" && lang !== "cz") return;
+  state.lang = lang;
+  localStorage.setItem(LANG_KEY, lang);
+  document.querySelectorAll(".lang-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.lang === lang));
+  document.documentElement.lang = lang;
+  applyTranslations();
+  rerenderAll();
 }
 
 function renderCategoryFilter() {
   const sel = document.getElementById("categoryFilter");
+  const prevValue = sel.value || state.filterCategory;
   sel.innerHTML = "";
   const optAll = document.createElement("option");
   optAll.value = "__all__";
-  optAll.textContent = "Všetky kategórie";
+  optAll.textContent = t("allCategories");
   sel.appendChild(optAll);
   for (const cat of CATEGORIES) {
     const o = document.createElement("option");
@@ -242,8 +422,8 @@ function renderProductList() {
     const empty = document.createElement("div");
     empty.className = "list-empty";
     empty.textContent = state.products.length === 0
-      ? 'Zatiaľ žiadne produkty.\nKlikni „+ Nový produkt".'
-      : "Žiadne výsledky pre tento filter.";
+      ? t("emptyListNone")
+      : t("emptyListFilter");
     list.appendChild(empty);
     return;
   }
@@ -278,7 +458,7 @@ function renderProductList() {
       const info = document.createElement("div");
       const nm = document.createElement("div");
       nm.className = "list-item-name";
-      nm.textContent = p.name || "(bez názvu)";
+      nm.textContent = p.name || t("productNoName");
       const sub = document.createElement("div");
       sub.className = "list-item-sub";
       sub.textContent = [p.subtitle, p.weight, p.price_ba].filter(Boolean).join(" • ");
@@ -312,7 +492,7 @@ function renderForm() {
   content.hidden = false;
 
   const p = state.products[state.selectedIndex];
-  document.getElementById("formProductName").textContent = p.name || "(bez názvu)";
+  document.getElementById("formProductName").textContent = p.name || t("productNoName");
   document.getElementById("fldCategory").value = p.category || "Cookies";
   document.getElementById("lblWeight").textContent = weightFieldLabel(p);
   document.getElementById("fldName").value = p.name || "";
@@ -333,7 +513,7 @@ function renderValidation() {
   if (state.selectedIndex < 0) { msg.textContent = ""; return; }
   const issues = validateProduct(state.products[state.selectedIndex]);
   if (issues.length === 0) {
-    msg.textContent = "✓ Všetky polia vyplnené správne";
+    msg.textContent = t("vAllOk");
     msg.className = "validation-msg ok";
   } else {
     msg.textContent = "⚠ " + issues.join(", ");
@@ -343,7 +523,7 @@ function renderValidation() {
 
 function renderFooterInfo() {
   const info = document.getElementById("footerInfo");
-  info.textContent = `${state.products.length} produktov • dáta v prehliadači (localStorage)`;
+  info.textContent = `${state.products.length} ${t("productsInDb")}`;
 }
 
 function rerenderAll() {
@@ -388,19 +568,19 @@ function duplicateProduct() {
   state.selectedIndex += 1;
   scheduleAutosave();
   rerenderAll();
-  showToast("Produkt zduplikovaný", "success");
+  showToast(t("toastDuplicated"), "success");
 }
 
 function deleteProduct() {
   if (state.selectedIndex < 0) return;
   const p = state.products[state.selectedIndex];
   const label = [p.name, p.subtitle].filter(Boolean).join(" — ");
-  if (!confirm(`Naozaj vymazať produkt:\n\n${label}\n\nTáto akcia sa nedá vrátiť.`)) return;
+  if (!confirm(`${t("confirmDelete")}\n\n${label}\n\n${t("confirmDeleteUndo")}`)) return;
   state.products.splice(state.selectedIndex, 1);
   if (state.selectedIndex >= state.products.length) state.selectedIndex = state.products.length - 1;
   scheduleAutosave();
   rerenderAll();
-  showToast("Produkt vymazaný");
+  showToast(t("toastDeleted"));
 }
 
 function updateField(field, rawValue, formatFn) {
@@ -410,7 +590,7 @@ function updateField(field, rawValue, formatFn) {
   scheduleAutosave();
   // Live update name in header & list
   if (field === "name" || field === "subtitle") {
-    document.getElementById("formProductName").textContent = p.name || "(bez názvu)";
+    document.getElementById("formProductName").textContent = p.name || t("productNoName");
   }
   // Live update weight/volume label when category changes
   if (field === "category") {
@@ -428,7 +608,7 @@ function exportJson() {
   a.download = `produkty_doris_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast("Dáta exportované", "success");
+  showToast(t("toastExported"), "success");
 }
 
 function importJsonFromFile(file) {
@@ -442,9 +622,9 @@ function importJsonFromFile(file) {
       state.selectedIndex = -1;
       saveToStorage();
       rerenderAll();
-      showToast(`Importovaných ${data.length} produktov`, "success");
+      showToast(t("toastImported").replace("{n}", data.length), "success");
     } catch (err) {
-      showToast("Chyba importu: " + err.message, "error");
+      showToast(t("toastImportError") + err.message, "error");
     }
   };
   reader.readAsText(file, "utf-8");
@@ -517,6 +697,11 @@ function wireEvents() {
   document.getElementById("btnSelectNone").addEventListener("click", () => modalToggleAll(false));
   document.getElementById("btnModalGenerate").addEventListener("click", generatePdfFromModal);
   document.getElementById("btnModalPrint").addEventListener("click", printDirectFromModal);
+
+  // Language toggle (SK vs CZ)
+  document.querySelectorAll(".lang-btn").forEach(btn => {
+    btn.addEventListener("click", () => setLang(btn.dataset.lang));
+  });
 
   // Price tier toggle (BA vs Mimo BA)
   document.querySelectorAll(".price-btn").forEach(btn => {
@@ -615,7 +800,7 @@ function renderModal() {
       const txt = document.createElement("span");
       const nm = document.createElement("span");
       nm.className = "modal-item-name";
-      nm.textContent = p.name || "(bez názvu)";
+      nm.textContent = p.name || t("productNoName");
       txt.appendChild(nm);
 
       if (p.subtitle) {
@@ -664,10 +849,11 @@ async function generatePdfFromModal() {
 
   closePdfModal();
   const priceField = modalState.priceTier === "mimo" ? "price_mimo_ba" : "price_ba";
-  showToast(`Generujem PDF (${modalState.priceTier === "mimo" ? "Mimo BA" : "BA"} cena)...`);
+  const priceTierLabel = modalState.priceTier === "mimo" ? "Mimo BA" : "BA";
+  showToast(`${t("toastGenerating")} (${priceTierLabel})...`);
   try {
-    await generateCenovkyPdf(selected, priceField);
-    showToast("PDF vygenerované", "success");
+    await generateCenovkyPdf(selected, priceField, state.lang);
+    showToast(t("toastPdfDone"), "success");
   } catch (e) {
     console.error(e);
     showToast("Chyba: " + e.message, "error");
@@ -689,10 +875,11 @@ async function printDirectFromModal() {
 
   closePdfModal();
   const priceField = modalState.priceTier === "mimo" ? "price_mimo_ba" : "price_ba";
-  showToast(`Pripravujem tlač (${modalState.priceTier === "mimo" ? "Mimo BA" : "BA"} cena)...`);
+  const priceTierLabel = modalState.priceTier === "mimo" ? "Mimo BA" : "BA";
+  showToast(`${t("toastPrintPreparing")} (${priceTierLabel})...`);
   try {
-    await printCenovkyDirect(selected, priceField);
-    showToast("Okno tlače otvorené", "success");
+    await printCenovkyDirect(selected, priceField, state.lang);
+    showToast(t("toastPrintDone"), "success");
   } catch (e) {
     console.error(e);
     showToast("Chyba: " + e.message, "error");
@@ -701,6 +888,12 @@ async function printDirectFromModal() {
 
 // ============= INIT =============
 async function init() {
+  // Apply saved language first
+  document.documentElement.lang = state.lang;
+  document.querySelectorAll(".lang-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.lang === state.lang));
+  applyTranslations();
+
   renderHeader();
   renderCategoryFilter();
   renderCategorySelect();

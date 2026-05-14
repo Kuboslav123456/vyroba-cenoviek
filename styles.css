@@ -81,6 +81,31 @@ body {
 .hdr-version { font-size: 12px; color: var(--text-secondary); }
 .hdr-right { display: flex; align-items: center; gap: 16px; }
 
+.lang-toggle {
+  display: inline-flex;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.lang-btn {
+  background: transparent;
+  color: rgba(255,255,255,0.65);
+  border: none;
+  padding: 5px 11px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.lang-btn:not(:last-child) { border-right: 1px solid rgba(255,255,255,0.2); }
+.lang-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+.lang-btn.active {
+  background: var(--primary);
+  color: white;
+}
+
 .status-indicator {
   font-size: 13px;
   color: var(--text-secondary);

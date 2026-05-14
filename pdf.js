@@ -115,10 +115,32 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-function drawCard(ctx, prod, cardX, cardY, priceField) {
+// PDF labels in two languages
+const PDF_LABELS = {
+  sk: {
+    zlozenie: "Zloženie:",
+    hmotnost: "Hmotnosť:",
+    objem: "Objem:",
+    alergeny: "Alergény:",
+    vyrobca: "Výrobca:",
+    trvanlivost: "Trvanlivosť:",
+  },
+  cz: {
+    zlozenie: "Složení:",
+    hmotnost: "Hmotnost:",
+    objem: "Objem:",
+    alergeny: "Alergeny:",
+    vyrobca: "Výrobce:",
+    trvanlivost: "Trvanlivost:",
+  },
+};
+
+function drawCard(ctx, prod, cardX, cardY, priceField, lang) {
   const cx = cardX + CARD_W / 2;
   ctx.fillStyle = "#000000";
   priceField = priceField || "price_ba";
+  lang = (lang === "cz") ? "cz" : "sk";
+  const L = PDF_LABELS[lang];
 
   const TITLE_BOX_H = CARD_POS.subtitle - CARD_POS.brand - 10;
   const SUBTITLE_BOX_H = CARD_POS.price - CARD_POS.subtitle - 10;
@@ -154,7 +176,7 @@ function drawCard(ctx, prod, cardX, cardY, priceField) {
 
   // Left column: ingredients
   setFont(ctx, "bold", "normal", FS.zlozenie_label);
-  ctx.fillText("Zloženie:", cardX + COL_LEFT_X, cardY + CARD_POS.zlozenie_label);
+  ctx.fillText(L.zlozenie, cardX + COL_LEFT_X, cardY + CARD_POS.zlozenie_label);
 
   setFont(ctx, "normal", "normal", FS.ingredients);
   const bodyLh = Math.round(ptToPx(FS.ingredients) * 1.30);
@@ -167,13 +189,13 @@ function drawCard(ctx, prod, cardX, cardY, priceField) {
 
   // Right column: details
   const isDrink = (prod.category || "") === "Nápoje";
-  const weightLabel = isDrink ? "Objem:" : "Hmotnosť:";
+  const weightLabel = isDrink ? L.objem : L.hmotnost;
   const detLh = Math.round(ptToPx(FS.details_value) * 1.45);
   const details = [
     [weightLabel, prod.weight || ""],
-    ["Alergény:", prod.alergeny || ""],
-    ["Výrobca:", prod.vyrobca || ""],
-    ["Trvanlivosť:", prod.trvanlivost || ""],
+    [L.alergeny, prod.alergeny || ""],
+    [L.vyrobca, prod.vyrobca || ""],
+    [L.trvanlivost, prod.trvanlivost || ""],
   ];
   // Value starts right after its label (small space), not aligned in table
   let dy = cardY + CARD_POS.details;
@@ -271,10 +293,11 @@ function paperBgImage() {
   });
 }
 
-async function generateCenovkyPdf(products, priceField) {
+async function generateCenovkyPdf(products, priceField, lang) {
   if (!products || products.length === 0) throw new Error("Ziadne produkty");
   if (typeof window.jspdf === "undefined") throw new Error("jsPDF sa nenacitalo");
   priceField = priceField || "price_ba";
+  lang = lang || "sk";
 
   await ensureFontsLoaded();
   const bg = await paperBgImage();
@@ -302,7 +325,7 @@ async function generateCenovkyPdf(products, priceField) {
     drawBackground(ctx, bg);
 
     for (let c = 0; c < chunk.length; c++) {
-      drawCard(ctx, chunk[c], CARD_X, CARD_OFFSETS_Y[c], priceField);
+      drawCard(ctx, chunk[c], CARD_X, CARD_OFFSETS_Y[c], priceField, lang);
     }
 
     const imgData = canvas.toDataURL("image/jpeg", 0.92);
@@ -315,9 +338,10 @@ async function generateCenovkyPdf(products, priceField) {
   pdf.save(`cenovky_doris_${stamp}.pdf`);
 }
 
-async function printCenovkyDirect(products, priceField) {
+async function printCenovkyDirect(products, priceField, lang) {
   if (!products || products.length === 0) throw new Error("Ziadne produkty");
   priceField = priceField || "price_ba";
+  lang = lang || "sk";
 
   await ensureFontsLoaded();
   const bg = await paperBgImage();
@@ -332,7 +356,7 @@ async function printCenovkyDirect(products, priceField) {
     ctx.clearRect(0, 0, PAGE_W, PAGE_H);
     drawBackground(ctx, bg);
     for (let c = 0; c < chunk.length; c++) {
-      drawCard(ctx, chunk[c], CARD_X, CARD_OFFSETS_Y[c], priceField);
+      drawCard(ctx, chunk[c], CARD_X, CARD_OFFSETS_Y[c], priceField, lang);
     }
     pages.push(canvas.toDataURL("image/jpeg", 0.92));
   }
