@@ -22,6 +22,7 @@ const TRANSLATIONS = {
     fldVolume: "Objem",
     fldPriceBa: "Cena BA",
     fldPriceMimo: "Cena mimo BA",
+    fldPriceCz: "Cena",
     fldIngredients: "Zloženie (ingrediencie)",
     fldAlergeny: "Alergény",
     fldTrvanlivost: "Trvanlivosť",
@@ -45,6 +46,7 @@ const TRANSLATIONS = {
     vMissingIngredients: "chýba zloženie",
     vPlaceholderIngredients: "zloženie obsahuje placeholder",
     vMissingPriceBa: "chýba cena BA",
+    vMissingPriceCz: "chýba cena",
     vMissingWeight: "chýba hmotnosť",
     vMissingVolume: "chýba objem",
     vMissingAlergeny: "chýbajú alergény",
@@ -91,6 +93,7 @@ const TRANSLATIONS = {
     fldVolume: "Objem",
     fldPriceBa: "Cena BA",
     fldPriceMimo: "Cena mimo BA",
+    fldPriceCz: "Cena",
     fldIngredients: "Složení (ingredience)",
     fldAlergeny: "Alergeny",
     fldTrvanlivost: "Trvanlivost",
@@ -114,6 +117,7 @@ const TRANSLATIONS = {
     vMissingIngredients: "chybí složení",
     vPlaceholderIngredients: "složení obsahuje placeholder",
     vMissingPriceBa: "chybí cena BA",
+    vMissingPriceCz: "chybí cena",
     vMissingWeight: "chybí hmotnost",
     vMissingVolume: "chybí objem",
     vMissingAlergeny: "chybí alergeny",
@@ -191,8 +195,12 @@ function weightFieldLabel(p) {
 }
 
 function formatPrice(s) {
+  // EUR formatter — for SK fields (price_ba, price_mimo_ba)
   if (!s) return s;
-  s = s.trim().replace(/EUR/gi, "€").replace(/\./g, ",");
+  s = s.trim();
+  // If user explicitly typed Kč/CZK, respect it
+  if (/k[cč]|czk/i.test(s)) return formatPriceCz(s);
+  s = s.replace(/EUR/gi, "€").replace(/\./g, ",");
   const m = s.match(/^(\d+)(?:,(\d+))?\s*€?\s*$/);
   if (m) {
     const whole = m[1];
@@ -200,6 +208,22 @@ function formatPrice(s) {
     if (!frac) frac = "00";
     else if (frac.length === 1) frac = frac + "0";
     return `${whole},${frac} €`;
+  }
+  return s;
+}
+
+function formatPriceCz(s) {
+  // Kč formatter — for CZ field (price_cz). Always returns "X Kč" or "X,YY Kč"
+  if (!s) return s;
+  s = s.trim()
+       .replace(/k[cč]|czk|€|EUR/gi, "")   // strip any currency marks
+       .trim()
+       .replace(/\./g, ",");
+  const m = s.match(/^(\d+)(?:,(\d+))?$/);
+  if (m) {
+    const whole = m[1];
+    const frac = m[2];
+    return frac ? `${whole},${frac} Kč` : `${whole} Kč`;
   }
   return s;
 }
@@ -226,7 +250,12 @@ function validateProduct(p) {
   if (!(p.name || "").trim()) issues.push(t("vMissingName"));
   if (!(p.ingredients || "").trim()) issues.push(t("vMissingIngredients"));
   else if ((p.ingredients || "").toLowerCase().includes("[doplnit")) issues.push(t("vPlaceholderIngredients"));
-  if (!(p.price_ba || "").trim()) issues.push(t("vMissingPriceBa"));
+  // In CZ mode require price_cz, in SK mode require price_ba
+  if (state.lang === "cz") {
+    if (!(p.price_cz || "").trim()) issues.push(t("vMissingPriceCz"));
+  } else {
+    if (!(p.price_ba || "").trim()) issues.push(t("vMissingPriceBa"));
+  }
   if (!(p.weight || "").trim()) issues.push(isDrinkCategory(p) ? t("vMissingVolume") : t("vMissingWeight"));
   if (!(p.alergeny || "").trim()) issues.push(t("vMissingAlergeny"));
   return issues;
@@ -240,6 +269,7 @@ function migrateProductSchema(products) {
       delete p.price;
     }
     if (!p.price_mimo_ba) p.price_mimo_ba = "";
+    if (!p.price_cz) p.price_cz = "";
   }
   return products;
 }
@@ -461,7 +491,8 @@ function renderProductList() {
       nm.textContent = p.name || t("productNoName");
       const sub = document.createElement("div");
       sub.className = "list-item-sub";
-      sub.textContent = [p.subtitle, p.weight, p.price_ba].filter(Boolean).join(" • ");
+      const displayPrice = state.lang === "cz" ? p.price_cz : p.price_ba;
+      sub.textContent = [p.subtitle, p.weight, displayPrice].filter(Boolean).join(" • ");
       info.appendChild(nm);
       if (sub.textContent) info.appendChild(sub);
       row.appendChild(info);
@@ -500,6 +531,7 @@ function renderForm() {
   document.getElementById("fldWeight").value = p.weight || "";
   document.getElementById("fldPriceBa").value = p.price_ba || "";
   document.getElementById("fldPriceMimo").value = p.price_mimo_ba || "";
+  document.getElementById("fldPriceCz").value = p.price_cz || "";
   document.getElementById("fldIngredients").value = p.ingredients || "";
   document.getElementById("fldAlergeny").value = p.alergeny || "";
   document.getElementById("fldTrvanlivost").value = p.trvanlivost || "";
@@ -547,6 +579,7 @@ function addProduct() {
     weight: "",
     price_ba: "",
     price_mimo_ba: "",
+    price_cz: "",
     ingredients: "",
     alergeny: "",
     vyrobca: "",
@@ -657,6 +690,7 @@ function wireEvents() {
     { id: "fldWeight", key: "weight", format: formatWeight, refresh: true },
     { id: "fldPriceBa", key: "price_ba", format: formatPrice, refresh: true },
     { id: "fldPriceMimo", key: "price_mimo_ba", format: formatPrice, refresh: true },
+    { id: "fldPriceCz", key: "price_cz", format: formatPriceCz, refresh: true },
     { id: "fldIngredients", key: "ingredients", refresh: false },
     { id: "fldAlergeny", key: "alergeny", format: formatAlergeny, refresh: false },
     { id: "fldTrvanlivost", key: "trvanlivost", format: formatTrvanlivost, refresh: false },
@@ -847,9 +881,14 @@ async function generatePdfFromModal() {
 
   closePdfModal();
 
-  closePdfModal();
-  const priceField = modalState.priceTier === "mimo" ? "price_mimo_ba" : "price_ba";
-  const priceTierLabel = modalState.priceTier === "mimo" ? "Mimo BA" : "BA";
+  let priceField, priceTierLabel;
+  if (state.lang === "cz") {
+    priceField = "price_cz";
+    priceTierLabel = "CZ";
+  } else {
+    priceField = modalState.priceTier === "mimo" ? "price_mimo_ba" : "price_ba";
+    priceTierLabel = modalState.priceTier === "mimo" ? "Mimo BA" : "BA";
+  }
   showToast(`${t("toastGenerating")} (${priceTierLabel})...`);
   try {
     await generateCenovkyPdf(selected, priceField, state.lang);
@@ -869,13 +908,19 @@ async function printDirectFromModal() {
   const invalid = selected.filter(p => validateProduct(p).length > 0);
   if (invalid.length > 0) {
     const names = invalid.slice(0, 3).map(p => `• ${p.name || "(bez názvu)"}: ${validateProduct(p).join(", ")}`).join("\n");
-    const more = invalid.length > 3 ? `\n... a ďalších ${invalid.length - 3}` : "";
-    if (!confirm(`Niektoré produkty majú chyby:\n\n${names}${more}\n\nPokračovať s tlačou?`)) return;
+    const more = invalid.length > 3 ? `\n... ${t("confirmAndOthers")} ${invalid.length - 3}` : "";
+    if (!confirm(`${t("confirmInvalidProducts")}\n\n${names}${more}\n\n${t("confirmPrintAnyway")}`)) return;
   }
 
   closePdfModal();
-  const priceField = modalState.priceTier === "mimo" ? "price_mimo_ba" : "price_ba";
-  const priceTierLabel = modalState.priceTier === "mimo" ? "Mimo BA" : "BA";
+  let priceField, priceTierLabel;
+  if (state.lang === "cz") {
+    priceField = "price_cz";
+    priceTierLabel = "CZ";
+  } else {
+    priceField = modalState.priceTier === "mimo" ? "price_mimo_ba" : "price_ba";
+    priceTierLabel = modalState.priceTier === "mimo" ? "Mimo BA" : "BA";
+  }
   showToast(`${t("toastPrintPreparing")} (${priceTierLabel})...`);
   try {
     await printCenovkyDirect(selected, priceField, state.lang);
@@ -886,9 +931,7 @@ async function printDirectFromModal() {
   }
 }
 
-// ============= INIT =============
 async function init() {
-  // Apply saved language first
   document.documentElement.lang = state.lang;
   document.querySelectorAll(".lang-btn").forEach(b =>
     b.classList.toggle("active", b.dataset.lang === state.lang));

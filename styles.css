@@ -49,6 +49,10 @@
 /* Force [hidden] to win over component display rules (modal, form-empty, etc.) */
 [hidden] { display: none !important; }
 
+/* Language-specific visibility — toggled by <html lang="sk"|"cz"> */
+html[lang="sk"] .lang-cz-only { display: none !important; }
+html[lang="cz"] .lang-sk-only { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;

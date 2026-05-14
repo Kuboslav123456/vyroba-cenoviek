@@ -85,14 +85,19 @@
             <input type="text" id="fldWeight">
           </label>
 
-          <label class="field">
+          <label class="field lang-sk-only">
             <span class="lbl" data-i18n="fldPriceBa">Cena BA</span>
             <input type="text" id="fldPriceBa">
           </label>
 
-          <label class="field">
+          <label class="field lang-sk-only">
             <span class="lbl" data-i18n="fldPriceMimo">Cena mimo BA</span>
             <input type="text" id="fldPriceMimo">
+          </label>
+
+          <label class="field field-full lang-cz-only">
+            <span class="lbl" data-i18n="fldPriceCz">Cena</span>
+            <input type="text" id="fldPriceCz" placeholder="napr. 89 Kč">
           </label>
 
           <label class="field field-full">
@@ -143,9 +148,9 @@
     <div class="modal-actions-top">
       <button class="btn btn-ghost btn-sm" id="btnSelectAll" data-i18n="btnSelectAll">Vybrať všetky</button>
       <button class="btn btn-ghost btn-sm" id="btnSelectNone" data-i18n="btnSelectNone">Žiadne</button>
-      <span class="price-sep">|</span>
-      <span class="price-label" data-i18n="priceLabel">Cena:</span>
-      <div class="price-toggle">
+      <span class="price-sep lang-sk-only">|</span>
+      <span class="price-label lang-sk-only" data-i18n="priceLabel">Cena:</span>
+      <div class="price-toggle lang-sk-only">
         <button class="price-btn active" data-tier="ba">BA</button>
         <button class="price-btn" data-tier="mimo">Mimo BA</button>
       </div>
